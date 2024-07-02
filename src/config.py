@@ -4,11 +4,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DB_HOST = os.environ.get("DB_HOST", '127.0.0.1')
-DB_PORT = os.environ.get("DB_PORT", 5488)
-DB_NAME = os.environ.get("DB_NAME", 'postgres')
-DB_USER = os.environ.get("DB_USER", 'postgres')
-DB_PASS = os.environ.get("DB_PASS", 'mad127')
+DB_HOST = '127.0.0.1' # os.environ.get("DB_HOST", '127.0.0.1')
+DB_PORT = "5488" #os.environ.get("DB_PORT", 5488)
+DB_NAME = 'postgres' #os.environ.get("DB_NAME", 'postgres')
+DB_USER = 'postgres' # os.environ.get("DB_USER", 'postgres')
+DB_PASS = 'mad127' # os.environ.get("DB_PASS", 'mad127')
 
 print('DB_PASS', DB_PASS, DB_PORT)
 

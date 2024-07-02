@@ -1,4 +1,7 @@
 from fastapi import FastAPI
+
+from src.auth.schemas import UserRead, UserCreate
+from src.auth.users import fastapi_users, auth_backend
 # from fastapi_cache import FastAPICache
 # from fastapi_cache.backends.redis import RedisBackend
 # from redis import asyncio as aioredis
@@ -15,6 +18,16 @@ app = FastAPI(
 
 app.include_router(memes_router)
 add_pagination(app)
+
+app.include_router(
+    fastapi_users.get_auth_router(auth_backend), prefix="/auth/jwt", tags=["auth"]
+)
+app.include_router(
+    fastapi_users.get_register_router(UserRead, UserCreate),
+    prefix="/auth",
+    tags=["auth"],
+)
+
 # app.include_router(
 #     fastapi_users.get_auth_router(auth_backend),
 #     prefix="/auth",
