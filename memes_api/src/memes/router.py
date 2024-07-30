@@ -1,22 +1,26 @@
 import datetime
 from typing import Any, Annotated
 
-import fastapi
+import requests
 import sqlalchemy
 from fastapi import APIRouter, Depends, HTTPException, Form, File, UploadFile
 from minio import Minio
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import StreamingResponse
 
 from auth.models import User
 from auth.users import current_active_user
+from config import MINIO_API_PORT, MINIO_API_HOST
 from memes.models import Memes
 from database import get_async_session
 from memes.schemas import MemesOut, MemesIn, MemesPut
 
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
+
+# from minio_api.config import MINIO_HOST, MINIO_PORT
 
 router = APIRouter(
     prefix="/api/v1",
@@ -39,50 +43,42 @@ async def get_mem_by_id(mem_id: int, session: AsyncSession = Depends(get_async_s
 
 
 @router.post('/memes', status_code=201)
-async def add_mem(
+async def add_mem( # mem_data: MemesIn,
         title: Annotated[str, Form()],
         category: Annotated[str, Form()],
         file: UploadFile,
-        # mem_data: MemesIn,
         user: User = Depends(current_active_user),
         session: AsyncSession = Depends(get_async_session)) -> int:
     # new_mem = Memes(created_at=datetime.datetime.now(), **mem_data.model_dump())
-    print(type(file), file)
-    client = Minio("192.168.17.105:9009",
-                   secure=False,
-                   access_key='memes_user',
-                   secret_key='memes_pass'
-                   )
 
-    source_file = file.file
-    bucket_name = "memes-bucket"
-    destination_file = "screenshot.py"
-
-    found = client.bucket_exists(bucket_name)
-    if not found:
-        client.make_bucket(bucket_name)
-        print("Created bucket", bucket_name)
-    else:
-        print("Bucket", bucket_name, "already exists")
-
-    # Upload the file, renaming it in the process
-    client.put_object(
-        bucket_name, destination_file, file.file, file.size
-    )
-    print(
-        source_file, "successfully uploaded as object",
-        destination_file, "to bucket", bucket_name,
-    )
+    new_mem = Memes(created_at=datetime.datetime.now(),
+                    title=title,
+                    category=category,
+                    )
+    session.add(new_mem)
+    await session.flush()
+    await session.refresh(new_mem)
+    filename = f"{new_mem.id}_{file.filename}"
+    headers = {'Content-Type': 'application/octet-stream'}
+    raw_data = file.read()
+    res = requests.post(f'http://{MINIO_API_HOST}:{MINIO_API_PORT}/image?filename={filename}',
+                        files={'file': (filename, file.file), })
+                        # headers=headers)
+    if res.status_code != 200:
+        print(res.text)
+        raise HTTPException(status_code=res.status_code, detail=res.text)
+    new_mem.image = f"/api/v1/images?filename={filename}"
+    session.add(new_mem)
+    await session.commit()
+    return new_mem.id
+    # return 1
 
 
-    # new_mem = Memes(created_at=datetime.datetime.now(),
-    #                 title=title,
-    #                 category=category,
-    #                 )
-    # session.add(new_mem)
-    # await session.commit()
-    # return new_mem.id
-    return 1
+@router.get('/images')
+def get_image(filename: str):
+    res = requests.get(f'http://{MINIO_API_HOST}:{MINIO_API_PORT}/image?filename={filename}')
+
+    return StreamingResponse(content=res, media_type=res.headers.get('content-type'))
 
 
 @router.put('/memes/{mem_id}')
