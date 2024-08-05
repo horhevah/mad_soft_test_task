@@ -1,25 +1,25 @@
 import asyncio
+from pathlib import Path
 from typing import AsyncGenerator
 
 import pytest
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import NullPool
 
-from database import get_async_session
-from src import metadata
-from src.config import (DB_HOST_TEST, DB_NAME_TEST, DB_PASS_TEST, DB_PORT_TEST,
-                        DB_USER_TEST)
-from src.main import app
+from database import get_async_session, Base
+from main import app
 
 # DATABASE
-DATABASE_URL_TEST = f"postgresql+asyncpg://{DB_USER_TEST}:{DB_PASS_TEST}@{DB_HOST_TEST}:{DB_PORT_TEST}/{DB_NAME_TEST}"
+# DATABASE_URL_TEST = f"postgresql+asyncpg://{DB_USER_TEST}:{DB_PASS_TEST}@{DB_HOST_TEST}:{DB_PORT_TEST}/{DB_NAME_TEST}"
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATABASE_URL_TEST = f'sqlite+aiosqlite:///{BASE_DIR}/database_test.db'
 
 engine_test = create_async_engine(DATABASE_URL_TEST, poolclass=NullPool)
-async_session_maker = sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
-metadata.bind = engine_test
+async_session_maker = async_sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
+# metadata.bind = engine_test
+
 
 async def override_get_async_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_session_maker() as session:
@@ -27,13 +27,15 @@ async def override_get_async_session() -> AsyncGenerator[AsyncSession, None]:
 
 app.dependency_overrides[get_async_session] = override_get_async_session
 
-@pytest.fixture(autouse=True, scope='session')
+
+@pytest.fixture(autouse=True, scope='function')
 async def prepare_database():
     async with engine_test.begin() as conn:
-        await conn.run_sync(metadata.create_all)
+        await conn.run_sync(Base.metadata.create_all)
     yield
     async with engine_test.begin() as conn:
-        await conn.run_sync(metadata.drop_all)
+        await conn.run_sync(Base.metadata.drop_all)
+
 
 # SETUP
 @pytest.fixture(scope='session')

@@ -4,7 +4,6 @@ from typing import Any, Annotated
 import requests
 import sqlalchemy
 from fastapi import APIRouter, Depends, HTTPException, Form, File, UploadFile
-from minio import Minio
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession

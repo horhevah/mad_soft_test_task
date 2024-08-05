@@ -9,16 +9,16 @@ from fastapi import HTTPException, FastAPI, UploadFile
 # from fastapi.responses import FileResponse
 from fastapi.responses import StreamingResponse
 
-from config import BUCKET_NAME
+from config import BUCKET_NAME, MINIO_PORT, MINIO_HOST, MINIO_PASS, MINIO_USER
 
 app = FastAPI(
     title="Memes App"
 )
 
-client = Minio("192.168.17.105:9009",
+client = Minio(f"{MINIO_HOST}:{MINIO_PORT}",
                    secure=False,
-                   access_key='memes_user',
-                   secret_key='memes_pass'
+                   access_key=MINIO_USER,
+                   secret_key=MINIO_PASS
         # access_key="Q3AM3UQ867SPQQA43P2F",
         # secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
     )
