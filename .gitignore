@@ -3,4 +3,4 @@ env/
 **/__pycache__/
 **/migrations
 *.pyc
-
+memes_api/database_test.db

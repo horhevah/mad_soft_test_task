@@ -21,6 +21,8 @@ from fastapi_pagination.ext.sqlalchemy import paginate
 
 # from minio_api.config import MINIO_HOST, MINIO_PORT
 
+import memes.services as services
+
 router = APIRouter(
     prefix="/api/v1",
     tags=["/api/v1"]
@@ -58,14 +60,9 @@ async def add_mem( # mem_data: MemesIn,
     await session.flush()
     await session.refresh(new_mem)
     filename = f"{new_mem.id}_{file.filename}"
-    headers = {'Content-Type': 'application/octet-stream'}
-    raw_data = file.read()
-    res = requests.post(f'http://{MINIO_API_HOST}:{MINIO_API_PORT}/image?filename={filename}',
-                        files={'file': (filename, file.file), })
-                        # headers=headers)
-    if res.status_code != 200:
-        print(res.text)
-        raise HTTPException(status_code=res.status_code, detail=res.text)
+
+    services.post_image_to_minio(filename, file)
+
     new_mem.image = f"/api/v1/images?filename={filename}"
     session.add(new_mem)
     await session.commit()

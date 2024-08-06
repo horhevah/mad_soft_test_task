@@ -1,3 +1,5 @@
+import typing
+
 import uuid
 from typing import Optional
 
@@ -9,7 +11,8 @@ from fastapi_users.authentication import (
     CookieTransport,
     JWTStrategy,
 )
-from fastapi_users.db import SQLAlchemyUserDatabase
+# if typing.TYPE_CHECKING:
+#     from fastapi_users.db import SQLAlchemyUserDatabase
 
 from auth.models import User
 
@@ -36,7 +39,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         print(f"Verification requested for user {user.id}. Verification token: {token}")
 
 
-async def get_user_manager(user_db: SQLAlchemyUserDatabase = Depends(get_user_db)):
+async def get_user_manager(user_db=Depends(get_user_db)):
     yield UserManager(user_db)
 
 
