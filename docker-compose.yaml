@@ -5,8 +5,6 @@ version: '3'
 services:
   memes_api:
     restart: always
-    ports:
-      - 8077:8000
     build:
       context: ./memes_api
     # image: diagnost
@@ -22,6 +20,7 @@ services:
 
     depends_on:
       - db
+      - minio_api
 
   db:
     image: postgres:14
@@ -61,7 +60,6 @@ services:
       MINIO_SECRET_KEY: minio123
     command: server --console-address ":9001" /data
 
-
   createbuckets:
     image: minio/mc
     depends_on:
@@ -72,3 +70,13 @@ services:
       /usr/bin/mc mb myminio/memes-bucket;      
       exit 0;
       "
+
+  nginx:
+    restart: always
+    image: nginx:latest
+    ports:
+      - 80:80
+    volumes:
+      - ./nginx_config:/etc/nginx/conf.d/
+    depends_on:
+      - memes_api
