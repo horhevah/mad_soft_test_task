@@ -11,3 +11,7 @@ for test memes_api:
 - go to directory memes_api
 - create virtual environment with requirements from file requirements
 - run pytest -s -v
+
+swagger documentation of memes_api is available by link
+{host:port}/docs
+memes_api use the fastapi-users authentication library, so some endpoints require authorization (available at auth links)
